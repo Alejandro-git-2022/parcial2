@@ -2,24 +2,41 @@ name: CI
 
 on:
   push:
-    branches:
-      - master
+    branches: [main]
   pull_request:
-    branches:
-      - master
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout del código
-        uses: actions/checkout@v3
+    - name: Checkout repository
+      uses: actions/checkout@v2
 
-      - name: Configurar JDK
-        uses: actions/setup-java@v2
-        with:
-          java-version: '11'
+    - name: Set up JDK 11
+      uses: actions/setup-java@v2
+      with:
+        java-version: '11'
 
-      - name: Ejecutar pruebas unitarias
-        run: ./gradlew test
+    - name: Build with Gradle
+      run: ./gradlew build
+
+    - name: Run unit tests
+      run: ./gradlew test
+
+    - name: Archive build artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: build-artifacts
+        path: build/
+
+    - name: Deploy to Firebase Hosting
+      if: github.ref == 'refs/heads/main'
+      uses: w9jds/firebase-action@v2
+      with:
+        args: deploy --only hosting
+      env:
+        FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+
